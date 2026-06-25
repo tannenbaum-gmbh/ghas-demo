@@ -18,8 +18,9 @@ WORKDIR /app
 
 COPY --from=build /out/gallery-service ./gallery-service
 COPY config.json ./config.json
-RUN sed -i 's/"host": "localhost"/"host": "0.0.0.0"/' /app/config.json
 
 EXPOSE 8081
+
+ENV GALLERY_HOST=0.0.0.0
 
 CMD ["./gallery-service", "/app/config.json"]
