@@ -229,7 +229,7 @@
 		{
 			"id": "26f67604-3f1e-458b-93fe-8590c47fd238",
 			"key": "access_token",
-			"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPY3RvR2FsbGVyeSIsImlhdCI6MTYwNDM5Njk4MSwiZXhwIjoxNjA0NDgzMzgxLCJwcm9maWxlIjp7ImxvZ2luIjoicnZlcm1ldWxlbiIsIm5hbWUiOiJSZW1jbyBWZXJtZXVsZW4iLCJlbWFpbCI6bnVsbH19.KkdI3Irz_QqxZKKmdGKlxQHQfvEBU70MkTnvv2zWWI0"
+			"value": "REPLACE_WITH_VALID_JWT_TOKEN"
 		}
 	],
 	"protocolProfileBehavior": {}
