@@ -1,7 +1,7 @@
 using './main.bicep'
 
 param environmentName = 'ghasdemo'
-param location = 'westeurope'
+param location = 'northeurope'
 param tags = {
   environment: 'demo'
   project: 'ghas-demo'
