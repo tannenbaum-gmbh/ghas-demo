@@ -16,7 +16,7 @@ param imageTag string = 'latest'
 
 // Default resource allocation for each container app
 var containerResources = {
-  cpu: '0.25'
+  cpu: 0.25
   memory: '0.5Gi'
 }
 
@@ -35,11 +35,12 @@ module managedIdentity 'br/public:avm/res/managed-identity/user-assigned-identit
 
 // Built-in role definition ID for AcrPull
 var acrPullRoleDefinitionId = '7f951dda-4ed3-4680-a7ca-43fe172d538d'
+var acrName = toLower('cr${replace(replace(environmentName, '-', ''), '_', '')}${uniqueString(resourceGroup().id)}')
 
 module containerRegistry 'br/public:avm/res/container-registry/registry:0.9.1' = {
   name: 'containerRegistry'
   params: {
-    name: 'cr${environmentName}'
+    name: acrName
     location: location
     tags: tags
     acrSku: 'Basic'
