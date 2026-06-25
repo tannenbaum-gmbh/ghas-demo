@@ -75,6 +75,7 @@ module managedEnvironment 'br/public:avm/res/app/managed-environment:0.10.1' = {
     location: location
     tags: tags
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
+    zoneRedundant: false
   }
 }
 
