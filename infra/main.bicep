@@ -16,7 +16,7 @@ param imageTag string = 'latest'
 
 // Default resource allocation for each container app
 var containerResources = {
-  cpu: 0.25
+  cpu: json('0.25')
   memory: '0.5Gi'
 }
 
@@ -44,7 +44,7 @@ module containerRegistry 'br/public:avm/res/container-registry/registry:0.9.1' =
     location: location
     tags: tags
     acrSku: 'Basic'
-    adminUserEnabled: false
+    acrAdminUserEnabled: false
     roleAssignments: [
       {
         principalId: managedIdentity.outputs.principalId
@@ -75,6 +75,7 @@ module managedEnvironment 'br/public:avm/res/app/managed-environment:0.10.1' = {
     location: location
     tags: tags
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
+    zoneRedundant: false
   }
 }
 

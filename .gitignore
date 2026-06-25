@@ -1,0 +1,38 @@
+# authn-service (Python)
+/authn-service/.env
+/authn-service/__pycache__/
+/authn-service/*.py[cod]
+/authn-service/*.egg-info/
+/authn-service/.pytest_cache/
+/authn-service/.mypy_cache/
+/authn-service/.venv/
+/authn-service/venv/
+
+# gallery-service (Go)
+/gallery-service/bin/
+/gallery-service/dist/
+/gallery-service/vendor/
+/gallery-service/*.exe
+/gallery-service/*.exe~
+/gallery-service/*.dll
+/gallery-service/*.so
+/gallery-service/*.dylib
+/gallery-service/*.test
+/gallery-service/*.out
+/gallery-service/coverage.out
+
+# storage-service (Maven)
+/storage-service/target/
+/storage-service/*.log
+
+# frontend (Node)
+/frontend/node_modules/
+/frontend/dist/
+/frontend/coverage/
+/frontend/*.log
+/frontend/.env.local
+/frontend/.env.*.local
+/frontend/npm-debug.log*
+/frontend/yarn-debug.log*
+/frontend/yarn-error.log*
+/frontend/pnpm-debug.log*
