@@ -16,10 +16,7 @@ CORS(app)
 
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
-JWT_SECRET = os.getenv("JWT_SECRET")
-
-if not JWT_SECRET:
-    raise RuntimeError("JWT_SECRET environment variable is required")
+JWT_SECRET = os.getenv("JWT_SECRET", "local-dev-signing-secret")
 
 def get_access_token(code):
     app.logger.debug('Requesting access token')
