@@ -6,7 +6,18 @@ on:
       - main
     paths:
       - 'infra/**'
+      - '.github/workflows/deploy-infrastructure.yml'
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Container image tag to deploy
+        required: false
+        type: string
+  workflow_call:
+    inputs:
+      image_tag:
+        required: false
+        type: string
 
 permissions:
   id-token: write   # required for OIDC token request
@@ -35,5 +46,7 @@ jobs:
           scope: resourcegroup
           resourceGroupName: ${{ secrets.AZURE_RESOURCE_GROUP }}
           template: infra/main.bicep
-          parameters: infra/main.bicepparam
+          parameters: >
+            infra/main.bicepparam
+            imageTag=${{ inputs.image_tag || 'latest' }}
           failOnStdErr: true

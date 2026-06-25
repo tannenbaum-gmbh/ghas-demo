@@ -18,15 +18,6 @@ Vue.use(VueRouter)
 
 Vue.prototype.$http = Axios
 
-const someUnusedProperty = new Vue({
-  data: {
-    myTestProperty: 2020
-  },
-  created: () => {
-    console.log('myTestProperty is: ' + this.myTestProperty);
-  }
-});
-
 const jwt = {
   decode(token) {
     if (!token) return {}

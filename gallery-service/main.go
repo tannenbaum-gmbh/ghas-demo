@@ -694,6 +694,9 @@ func main() {
 		panic(err)
 	}
 	configuration = c
+	if host := os.Getenv("GALLERY_HOST"); host != "" {
+		configuration.Host = host
+	}
 
 	InitializeDb()
 
