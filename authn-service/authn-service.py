@@ -16,7 +16,7 @@ CORS(app)
 
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
-JWT_SECRET = os.getenv("JWT_SECRET", "local-dev-signing-secret")
+JWT_SECRET = os.getenv("JWT_SECRET", "secretsecret1234secretsecret1234")
 
 def get_access_token(code):
     app.logger.debug('Requesting access token')
