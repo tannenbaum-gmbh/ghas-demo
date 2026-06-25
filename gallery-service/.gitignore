@@ -9,4 +9,3 @@ vendor/
 *.test
 *.out
 coverage.out
-
