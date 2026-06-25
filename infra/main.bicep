@@ -11,6 +11,15 @@ param environmentName string
 @description('Tags to apply to all resources.')
 param tags object = {}
 
+@description('Container image tag to deploy for all services.')
+param imageTag string = 'latest'
+
+// Default resource allocation for each container app
+var containerResources = {
+  cpu: '0.25'
+  memory: '0.5Gi'
+}
+
 // ── User-Assigned Managed Identity ───────────────────────────────────────────
 
 module managedIdentity 'br/public:avm/res/managed-identity/user-assigned-identity:0.4.1' = {
@@ -68,6 +77,120 @@ module managedEnvironment 'br/public:avm/res/app/managed-environment:0.10.1' = {
   }
 }
 
+// ── Container Apps ───────────────────────────────────────────────────────────
+
+module authnApp 'br/public:avm/res/app/container-app:0.11.0' = {
+  name: 'authnApp'
+  params: {
+    name: 'ca-authn-${environmentName}'
+    location: location
+    tags: tags
+    environmentResourceId: managedEnvironment.outputs.resourceId
+    managedIdentities: {
+      userAssignedResourceIds: [managedIdentity.outputs.resourceId]
+    }
+    registries: [
+      {
+        server: containerRegistry.outputs.loginServer
+        identity: managedIdentity.outputs.resourceId
+      }
+    ]
+    containers: [
+      {
+        name: 'authn-service'
+        image: '${containerRegistry.outputs.loginServer}/authn-service:${imageTag}'
+        resources: containerResources
+      }
+    ]
+    ingressTargetPort: 5000
+    ingressExternal: false
+  }
+}
+
+module galleryApp 'br/public:avm/res/app/container-app:0.11.0' = {
+  name: 'galleryApp'
+  params: {
+    name: 'ca-gallery-${environmentName}'
+    location: location
+    tags: tags
+    environmentResourceId: managedEnvironment.outputs.resourceId
+    managedIdentities: {
+      userAssignedResourceIds: [managedIdentity.outputs.resourceId]
+    }
+    registries: [
+      {
+        server: containerRegistry.outputs.loginServer
+        identity: managedIdentity.outputs.resourceId
+      }
+    ]
+    containers: [
+      {
+        name: 'gallery-service'
+        image: '${containerRegistry.outputs.loginServer}/gallery-service:${imageTag}'
+        resources: containerResources
+      }
+    ]
+    ingressTargetPort: 8081
+    ingressExternal: false
+  }
+}
+
+module storageApp 'br/public:avm/res/app/container-app:0.11.0' = {
+  name: 'storageApp'
+  params: {
+    name: 'ca-storage-${environmentName}'
+    location: location
+    tags: tags
+    environmentResourceId: managedEnvironment.outputs.resourceId
+    managedIdentities: {
+      userAssignedResourceIds: [managedIdentity.outputs.resourceId]
+    }
+    registries: [
+      {
+        server: containerRegistry.outputs.loginServer
+        identity: managedIdentity.outputs.resourceId
+      }
+    ]
+    containers: [
+      {
+        name: 'storage-service'
+        image: '${containerRegistry.outputs.loginServer}/storage-service:${imageTag}'
+        resources: containerResources
+      }
+    ]
+    ingressTargetPort: 8082
+    ingressExternal: false
+  }
+}
+
+module frontendApp 'br/public:avm/res/app/container-app:0.11.0' = {
+  name: 'frontendApp'
+  params: {
+    name: 'ca-frontend-${environmentName}'
+    location: location
+    tags: tags
+    environmentResourceId: managedEnvironment.outputs.resourceId
+    managedIdentities: {
+      userAssignedResourceIds: [managedIdentity.outputs.resourceId]
+    }
+    registries: [
+      {
+        server: containerRegistry.outputs.loginServer
+        identity: managedIdentity.outputs.resourceId
+      }
+    ]
+    containers: [
+      {
+        name: 'frontend'
+        image: '${containerRegistry.outputs.loginServer}/frontend:${imageTag}'
+        resources: containerResources
+      }
+    ]
+    ingressTargetPort: 80
+    ingressExternal: true
+  }
+}
+
 // ── Outputs ───────────────────────────────────────────────────────────────────
 
 @description('Resource ID of the User-Assigned Managed Identity.')
@@ -84,3 +207,6 @@ output containerRegistryLoginServer string = containerRegistry.outputs.loginServ
 
 @description('Resource ID of the Container Apps Environment.')
 output managedEnvironmentResourceId string = managedEnvironment.outputs.resourceId
+
+@description('FQDN of the frontend Container App.')
+output frontendFqdn string = frontendApp.outputs.fqdn
