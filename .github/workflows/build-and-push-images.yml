@@ -10,7 +10,6 @@ on:
       - 'gallery-service/**'
       - 'storage-service/**'
       - '.github/workflows/build-and-push-images.yml'
-      - '.github/workflows/deploy-infrastructure.yml'
   workflow_dispatch:
 
 permissions:

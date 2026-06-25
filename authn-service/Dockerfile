@@ -1,13 +1,13 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
 RUN pip install --no-cache-dir \
-    Flask==1.1.2 \
-    Flask-Cors==3.0.8 \
-    PyJWT==1.7.1 \
-    python-dotenv==0.15.0 \
-    requests==2.24.0
+    Flask==3.0.3 \
+    Flask-Cors==5.0.1 \
+    PyJWT==2.9.0 \
+    python-dotenv==1.0.1 \
+    requests==2.32.3
 
 COPY authn-service.py ./
 

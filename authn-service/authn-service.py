@@ -16,6 +16,7 @@ CORS(app)
 
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+JWT_SECRET = os.getenv("JWT_SECRET", "local-dev-signing-secret")
 
 def get_access_token(code):
     app.logger.debug('Requesting access token')
@@ -72,6 +73,6 @@ def authenticate(code):
     }
     app.logger.debug("Created claimset: %s", claimset)
 
-    token = jwt.encode(claimset, 'secretsecret1234secretsecret1234', algorithm='HS256')
+    token = jwt.encode(claimset, JWT_SECRET, algorithm='HS256')
 
-    return {'token': token.decode()}
+    return {'token': token}
