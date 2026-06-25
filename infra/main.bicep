@@ -11,7 +11,21 @@ param environmentName string
 @description('Tags to apply to all resources.')
 param tags object = {}
 
+// ── User-Assigned Managed Identity ───────────────────────────────────────────
+
+module managedIdentity 'br/public:avm/res/managed-identity/user-assigned-identity:0.4.1' = {
+  name: 'managedIdentity'
+  params: {
+    name: 'id-${environmentName}'
+    location: location
+    tags: tags
+  }
+}
+
 // ── Azure Container Registry ──────────────────────────────────────────────────
+
+// Built-in role definition ID for AcrPull
+var acrPullRoleDefinitionId = '7f951dda-4ed3-4680-a7ca-43fe172d538d'
 
 module containerRegistry 'br/public:avm/res/container-registry/registry:0.9.1' = {
   name: 'containerRegistry'
@@ -21,6 +35,13 @@ module containerRegistry 'br/public:avm/res/container-registry/registry:0.9.1' =
     tags: tags
     acrSku: 'Basic'
     adminUserEnabled: false
+    roleAssignments: [
+      {
+        principalId: managedIdentity.outputs.principalId
+        roleDefinitionIdOrName: acrPullRoleDefinitionId
+        principalType: 'ServicePrincipal'
+      }
+    ]
   }
 }
 
@@ -48,6 +69,12 @@ module managedEnvironment 'br/public:avm/res/app/managed-environment:0.10.1' = {
 }
 
 // ── Outputs ───────────────────────────────────────────────────────────────────
+
+@description('Resource ID of the User-Assigned Managed Identity.')
+output managedIdentityResourceId string = managedIdentity.outputs.resourceId
+
+@description('Client ID of the User-Assigned Managed Identity.')
+output managedIdentityClientId string = managedIdentity.outputs.clientId
 
 @description('Resource ID of the Azure Container Registry.')
 output containerRegistryResourceId string = containerRegistry.outputs.resourceId
