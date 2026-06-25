@@ -1,0 +1,101 @@
+name: Build and push images
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'authn-service/**'
+      - 'frontend/**'
+      - 'gallery-service/**'
+      - 'storage-service/**'
+      - '.github/workflows/build-and-push-images.yml'
+      - '.github/workflows/deploy-infrastructure.yml'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  metadata:
+    name: Create image metadata
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.image-tag.outputs.image_tag }}
+    steps:
+      - name: Create image tag
+        id: image-tag
+        run: echo "image_tag=$(date -u +'%Y%m%d')-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
+
+  build-and-push:
+    name: Build and push container images
+    needs: metadata
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - context: authn-service
+            dockerfile: authn-service/Dockerfile
+            image: authn-service
+            prepare: ''
+          - context: frontend
+            dockerfile: frontend/Dockerfile
+            image: frontend
+            prepare: ''
+          - context: gallery-service
+            dockerfile: gallery-service/Dockerfile
+            image: gallery-service
+            prepare: ''
+          - context: storage-service
+            dockerfile: storage-service/Dockerfile
+            image: storage-service
+            prepare: cd storage-service && mvn -q -DskipTests package
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Prepare build context
+        if: ${{ matrix.prepare != '' }}
+        run: ${{ matrix.prepare }}
+
+      - name: Resolve container registry
+        id: registry
+        run: |
+          login_server=$(az acr list --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" --query "[0].loginServer" -o tsv)
+          registry_name=${login_server%%.*}
+          echo "login_server=$login_server" >> "$GITHUB_OUTPUT"
+          echo "registry_name=$registry_name" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to Azure Container Registry
+        run: az acr login --name "${{ steps.registry.outputs.registry_name }}"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push ${{ matrix.image }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.registry.outputs.login_server }}/${{ matrix.image }}:${{ needs.metadata.outputs.image_tag }}
+
+  deploy:
+    name: Deploy updated images
+    needs:
+      - metadata
+      - build-and-push
+    uses: ./.github/workflows/deploy-infrastructure.yml
+    with:
+      image_tag: ${{ needs.metadata.outputs.image_tag }}
+    secrets: inherit
