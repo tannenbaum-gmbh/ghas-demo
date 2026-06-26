@@ -197,36 +197,33 @@ module frontendApp 'br/public:avm/res/app/container-app:0.11.0' = {
 
 var webAppSuffix = take(uniqueString(resourceGroup().id), 8)
 
-resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {
-  name: 'asp-${environmentName}'
-  location: location
-  tags: tags
-  sku: {
-    name: 'B1'
-    tier: 'Basic'
-  }
-  kind: 'linux'
-  properties: {
+module appServicePlan 'br/public:avm/res/web/serverfarm:0.7.0' = {
+  name: 'appServicePlan'
+  params: {
+    name: 'asp-${environmentName}'
+    location: location
+    tags: tags
+    kind: 'linux'
+    skuName: 'B1'
     reserved: true
+    zoneRedundant: false
   }
 }
 
 // ── App Service Web Apps ──────────────────────────────────────────────────────
 
-resource authnWebApp 'Microsoft.Web/sites@2023-12-01' = {
-  name: 'wa-authn-${environmentName}-${webAppSuffix}'
-  location: location
-  tags: tags
-  kind: 'app,linux,container'
-  identity: {
-    type: 'UserAssigned'
-    userAssignedIdentities: {
-      '${managedIdentity.outputs.resourceId}': {}
-    }
-  }
-  properties: {
-    serverFarmId: appServicePlan.id
+module authnWebApp 'br/public:avm/res/web/site:0.23.1' = {
+  name: 'authnWebApp'
+  params: {
+    kind: 'app,linux,container'
+    name: 'wa-authn-${environmentName}-${webAppSuffix}'
+    location: location
+    tags: tags
+    serverFarmResourceId: appServicePlan.outputs.resourceId
     httpsOnly: true
+    managedIdentities: {
+      userAssignedResourceIds: [managedIdentity.outputs.resourceId]
+    }
     siteConfig: {
       linuxFxVersion: 'DOCKER|${containerRegistry.outputs.loginServer}/authn-service:${imageTag}'
       acrUseManagedIdentityCreds: true
@@ -245,20 +242,18 @@ resource authnWebApp 'Microsoft.Web/sites@2023-12-01' = {
   }
 }
 
-resource galleryWebApp 'Microsoft.Web/sites@2023-12-01' = {
-  name: 'wa-gallery-${environmentName}-${webAppSuffix}'
-  location: location
-  tags: tags
-  kind: 'app,linux,container'
-  identity: {
-    type: 'UserAssigned'
-    userAssignedIdentities: {
-      '${managedIdentity.outputs.resourceId}': {}
-    }
-  }
-  properties: {
-    serverFarmId: appServicePlan.id
+module galleryWebApp 'br/public:avm/res/web/site:0.23.1' = {
+  name: 'galleryWebApp'
+  params: {
+    kind: 'app,linux,container'
+    name: 'wa-gallery-${environmentName}-${webAppSuffix}'
+    location: location
+    tags: tags
+    serverFarmResourceId: appServicePlan.outputs.resourceId
     httpsOnly: true
+    managedIdentities: {
+      userAssignedResourceIds: [managedIdentity.outputs.resourceId]
+    }
     siteConfig: {
       linuxFxVersion: 'DOCKER|${containerRegistry.outputs.loginServer}/gallery-service:${imageTag}'
       acrUseManagedIdentityCreds: true
@@ -277,20 +272,18 @@ resource galleryWebApp 'Microsoft.Web/sites@2023-12-01' = {
   }
 }
 
-resource storageWebApp 'Microsoft.Web/sites@2023-12-01' = {
-  name: 'wa-storage-${environmentName}-${webAppSuffix}'
-  location: location
-  tags: tags
-  kind: 'app,linux,container'
-  identity: {
-    type: 'UserAssigned'
-    userAssignedIdentities: {
-      '${managedIdentity.outputs.resourceId}': {}
-    }
-  }
-  properties: {
-    serverFarmId: appServicePlan.id
+module storageWebApp 'br/public:avm/res/web/site:0.23.1' = {
+  name: 'storageWebApp'
+  params: {
+    kind: 'app,linux,container'
+    name: 'wa-storage-${environmentName}-${webAppSuffix}'
+    location: location
+    tags: tags
+    serverFarmResourceId: appServicePlan.outputs.resourceId
     httpsOnly: true
+    managedIdentities: {
+      userAssignedResourceIds: [managedIdentity.outputs.resourceId]
+    }
     siteConfig: {
       linuxFxVersion: 'DOCKER|${containerRegistry.outputs.loginServer}/storage-service:${imageTag}'
       acrUseManagedIdentityCreds: true
@@ -309,20 +302,18 @@ resource storageWebApp 'Microsoft.Web/sites@2023-12-01' = {
   }
 }
 
-resource frontendWebApp 'Microsoft.Web/sites@2023-12-01' = {
-  name: 'wa-frontend-${environmentName}-${webAppSuffix}'
-  location: location
-  tags: tags
-  kind: 'app,linux,container'
-  identity: {
-    type: 'UserAssigned'
-    userAssignedIdentities: {
-      '${managedIdentity.outputs.resourceId}': {}
-    }
-  }
-  properties: {
-    serverFarmId: appServicePlan.id
+module frontendWebApp 'br/public:avm/res/web/site:0.23.1' = {
+  name: 'frontendWebApp'
+  params: {
+    kind: 'app,linux,container'
+    name: 'wa-frontend-${environmentName}-${webAppSuffix}'
+    location: location
+    tags: tags
+    serverFarmResourceId: appServicePlan.outputs.resourceId
     httpsOnly: true
+    managedIdentities: {
+      userAssignedResourceIds: [managedIdentity.outputs.resourceId]
+    }
     siteConfig: {
       linuxFxVersion: 'DOCKER|${containerRegistry.outputs.loginServer}/frontend:${imageTag}'
       acrUseManagedIdentityCreds: true
@@ -362,13 +353,13 @@ output managedEnvironmentResourceId string = managedEnvironment.outputs.resource
 output frontendFqdn string = frontendApp.outputs.fqdn
 
 @description('Default hostname of the authn App Service Web App.')
-output authnWebAppHostname string = authnWebApp.properties.defaultHostName
+output authnWebAppHostname string = authnWebApp.outputs.defaultHostname
 
 @description('Default hostname of the gallery App Service Web App.')
-output galleryWebAppHostname string = galleryWebApp.properties.defaultHostName
+output galleryWebAppHostname string = galleryWebApp.outputs.defaultHostname
 
 @description('Default hostname of the storage App Service Web App.')
-output storageWebAppHostname string = storageWebApp.properties.defaultHostName
+output storageWebAppHostname string = storageWebApp.outputs.defaultHostname
 
 @description('Default hostname of the frontend App Service Web App.')
-output frontendWebAppHostname string = frontendWebApp.properties.defaultHostName
+output frontendWebAppHostname string = frontendWebApp.outputs.defaultHostname
