@@ -193,6 +193,154 @@ module frontendApp 'br/public:avm/res/app/container-app:0.11.0' = {
   }
 }
 
+// ── App Service Plan (B1, Linux) ─────────────────────────────────────────────
+
+var webAppSuffix = take(uniqueString(resourceGroup().id), 8)
+
+resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {
+  name: 'asp-${environmentName}'
+  location: location
+  tags: tags
+  sku: {
+    name: 'B1'
+    tier: 'Basic'
+  }
+  kind: 'linux'
+  properties: {
+    reserved: true
+  }
+}
+
+// ── App Service Web Apps ──────────────────────────────────────────────────────
+
+resource authnWebApp 'Microsoft.Web/sites@2023-12-01' = {
+  name: 'wa-authn-${environmentName}-${webAppSuffix}'
+  location: location
+  tags: tags
+  kind: 'app,linux,container'
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${managedIdentity.outputs.resourceId}': {}
+    }
+  }
+  properties: {
+    serverFarmId: appServicePlan.id
+    httpsOnly: true
+    siteConfig: {
+      linuxFxVersion: 'DOCKER|${containerRegistry.outputs.loginServer}/authn-service:${imageTag}'
+      acrUseManagedIdentityCreds: true
+      acrUserManagedIdentityID: managedIdentity.outputs.clientId
+      appSettings: [
+        {
+          name: 'DOCKER_REGISTRY_SERVER_URL'
+          value: 'https://${containerRegistry.outputs.loginServer}'
+        }
+        {
+          name: 'WEBSITES_PORT'
+          value: '5000'
+        }
+      ]
+    }
+  }
+}
+
+resource galleryWebApp 'Microsoft.Web/sites@2023-12-01' = {
+  name: 'wa-gallery-${environmentName}-${webAppSuffix}'
+  location: location
+  tags: tags
+  kind: 'app,linux,container'
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${managedIdentity.outputs.resourceId}': {}
+    }
+  }
+  properties: {
+    serverFarmId: appServicePlan.id
+    httpsOnly: true
+    siteConfig: {
+      linuxFxVersion: 'DOCKER|${containerRegistry.outputs.loginServer}/gallery-service:${imageTag}'
+      acrUseManagedIdentityCreds: true
+      acrUserManagedIdentityID: managedIdentity.outputs.clientId
+      appSettings: [
+        {
+          name: 'DOCKER_REGISTRY_SERVER_URL'
+          value: 'https://${containerRegistry.outputs.loginServer}'
+        }
+        {
+          name: 'WEBSITES_PORT'
+          value: '8081'
+        }
+      ]
+    }
+  }
+}
+
+resource storageWebApp 'Microsoft.Web/sites@2023-12-01' = {
+  name: 'wa-storage-${environmentName}-${webAppSuffix}'
+  location: location
+  tags: tags
+  kind: 'app,linux,container'
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${managedIdentity.outputs.resourceId}': {}
+    }
+  }
+  properties: {
+    serverFarmId: appServicePlan.id
+    httpsOnly: true
+    siteConfig: {
+      linuxFxVersion: 'DOCKER|${containerRegistry.outputs.loginServer}/storage-service:${imageTag}'
+      acrUseManagedIdentityCreds: true
+      acrUserManagedIdentityID: managedIdentity.outputs.clientId
+      appSettings: [
+        {
+          name: 'DOCKER_REGISTRY_SERVER_URL'
+          value: 'https://${containerRegistry.outputs.loginServer}'
+        }
+        {
+          name: 'WEBSITES_PORT'
+          value: '8082'
+        }
+      ]
+    }
+  }
+}
+
+resource frontendWebApp 'Microsoft.Web/sites@2023-12-01' = {
+  name: 'wa-frontend-${environmentName}-${webAppSuffix}'
+  location: location
+  tags: tags
+  kind: 'app,linux,container'
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${managedIdentity.outputs.resourceId}': {}
+    }
+  }
+  properties: {
+    serverFarmId: appServicePlan.id
+    httpsOnly: true
+    siteConfig: {
+      linuxFxVersion: 'DOCKER|${containerRegistry.outputs.loginServer}/frontend:${imageTag}'
+      acrUseManagedIdentityCreds: true
+      acrUserManagedIdentityID: managedIdentity.outputs.clientId
+      appSettings: [
+        {
+          name: 'DOCKER_REGISTRY_SERVER_URL'
+          value: 'https://${containerRegistry.outputs.loginServer}'
+        }
+        {
+          name: 'WEBSITES_PORT'
+          value: '80'
+        }
+      ]
+    }
+  }
+}
+
 // ── Outputs ───────────────────────────────────────────────────────────────────
 
 @description('Resource ID of the User-Assigned Managed Identity.')
@@ -212,3 +360,15 @@ output managedEnvironmentResourceId string = managedEnvironment.outputs.resource
 
 @description('FQDN of the frontend Container App.')
 output frontendFqdn string = frontendApp.outputs.fqdn
+
+@description('Default hostname of the authn App Service Web App.')
+output authnWebAppHostname string = authnWebApp.properties.defaultHostName
+
+@description('Default hostname of the gallery App Service Web App.')
+output galleryWebAppHostname string = galleryWebApp.properties.defaultHostName
+
+@description('Default hostname of the storage App Service Web App.')
+output storageWebAppHostname string = storageWebApp.properties.defaultHostName
+
+@description('Default hostname of the frontend App Service Web App.')
+output frontendWebAppHostname string = frontendWebApp.properties.defaultHostName
