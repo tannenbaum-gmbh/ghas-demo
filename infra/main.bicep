@@ -103,11 +103,6 @@ var logAnalyticsDiagnosticSettings = [
   {
     name: 'diag-${environmentName}'
     workspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
-    logCategoriesAndGroups: [
-      {
-        categoryGroup: 'allLogs'
-      }
-    ]
     metricCategories: [
       {
         category: 'AllMetrics'
@@ -124,7 +119,6 @@ module managedEnvironment 'br/public:avm/res/app/managed-environment:0.13.3' = {
     name: 'cae-${environmentName}'
     location: location
     tags: tags
-    logAnalyticsWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
     zoneRedundant: false
     workloadProfiles: dedicatedWorkloadProfile
     appLogsConfiguration: {
