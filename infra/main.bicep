@@ -20,6 +20,21 @@ var containerResources = {
   memory: '0.5Gi'
 }
 
+var dedicatedWorkloadProfileName = 'default'
+var dedicatedWorkloadProfile = [
+  {
+    name: dedicatedWorkloadProfileName
+    workloadProfileType: 'D4'
+    minimumCount: 1
+    maximumCount: 1
+  }
+]
+
+var singleReplicaScaleSettings = {
+  minReplicas: 1
+  maxReplicas: 1
+}
+
 // ── User-Assigned Managed Identity ───────────────────────────────────────────
 
 module managedIdentity 'br/public:avm/res/managed-identity/user-assigned-identity:0.4.1' = {
@@ -66,6 +81,23 @@ module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0
   }
 }
 
+var logAnalyticsDiagnosticSettings = [
+  {
+    name: 'diag-${environmentName}'
+    workspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
+    logCategoriesAndGroups: [
+      {
+        categoryGroup: 'allLogs'
+      }
+    ]
+    metricCategories: [
+      {
+        category: 'AllMetrics'
+      }
+    ]
+  }
+]
+
 // ── Azure Container Apps Environment ─────────────────────────────────────────
 
 module managedEnvironment 'br/public:avm/res/app/managed-environment:0.10.1' = {
@@ -76,6 +108,11 @@ module managedEnvironment 'br/public:avm/res/app/managed-environment:0.10.1' = {
     tags: tags
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
     zoneRedundant: false
+    workloadProfiles: dedicatedWorkloadProfile
+    appLogsConfiguration: {
+      destination: 'log-analytics'
+      logAnalyticsWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
+    }
   }
 }
 
@@ -106,6 +143,9 @@ module authnApp 'br/public:avm/res/app/container-app:0.11.0' = {
     ]
     ingressTargetPort: 5000
     ingressExternal: false
+    scaleSettings: singleReplicaScaleSettings
+    workloadProfileName: dedicatedWorkloadProfileName
+    diagnosticSettings: logAnalyticsDiagnosticSettings
   }
 }
 
@@ -134,6 +174,9 @@ module galleryApp 'br/public:avm/res/app/container-app:0.11.0' = {
     ]
     ingressTargetPort: 8081
     ingressExternal: false
+    scaleSettings: singleReplicaScaleSettings
+    workloadProfileName: dedicatedWorkloadProfileName
+    diagnosticSettings: logAnalyticsDiagnosticSettings
   }
 }
 
@@ -162,6 +205,9 @@ module storageApp 'br/public:avm/res/app/container-app:0.11.0' = {
     ]
     ingressTargetPort: 8082
     ingressExternal: false
+    scaleSettings: singleReplicaScaleSettings
+    workloadProfileName: dedicatedWorkloadProfileName
+    diagnosticSettings: logAnalyticsDiagnosticSettings
   }
 }
 
@@ -190,6 +236,9 @@ module frontendApp 'br/public:avm/res/app/container-app:0.11.0' = {
     ]
     ingressTargetPort: 80
     ingressExternal: true
+    scaleSettings: singleReplicaScaleSettings
+    workloadProfileName: dedicatedWorkloadProfileName
+    diagnosticSettings: logAnalyticsDiagnosticSettings
   }
 }
 
@@ -239,6 +288,7 @@ module authnWebApp 'br/public:avm/res/web/site:0.23.1' = {
         }
       ]
     }
+    diagnosticSettings: logAnalyticsDiagnosticSettings
   }
 }
 
@@ -269,6 +319,7 @@ module galleryWebApp 'br/public:avm/res/web/site:0.23.1' = {
         }
       ]
     }
+    diagnosticSettings: logAnalyticsDiagnosticSettings
   }
 }
 
@@ -299,6 +350,7 @@ module storageWebApp 'br/public:avm/res/web/site:0.23.1' = {
         }
       ]
     }
+    diagnosticSettings: logAnalyticsDiagnosticSettings
   }
 }
 
@@ -329,6 +381,7 @@ module frontendWebApp 'br/public:avm/res/web/site:0.23.1' = {
         }
       ]
     }
+    diagnosticSettings: logAnalyticsDiagnosticSettings
   }
 }
 
