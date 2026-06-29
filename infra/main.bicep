@@ -14,25 +14,43 @@ param tags object = {}
 @description('Container image tag to deploy for all services.')
 param imageTag string = 'latest'
 
+@description('Minimum number of replicas to configure for each container app.')
+@minValue(1)
+param containerAppMinReplicas int = 1
+
+@description('Maximum number of replicas to configure for each container app.')
+@minValue(1)
+param containerAppMaxReplicas int = 1
+
+@description('Minimum number of dedicated workload profile instances for the managed environment.')
+@minValue(1)
+param dedicatedWorkloadProfileMinCount int = 1
+
+@description('Maximum number of dedicated workload profile instances for the managed environment.')
+@minValue(1)
+param dedicatedWorkloadProfileMaxCount int = 1
+
 // Default resource allocation for each container app
 var containerResources = {
   cpu: json('0.25')
   memory: '0.5Gi'
 }
 
-var dedicatedWorkloadProfileName = 'default'
+// Dedicated workload profile for the container apps environment.
+var dedicatedWorkloadProfileName = 'dedicatedWorkloadProfile'
 var dedicatedWorkloadProfile = [
   {
     name: dedicatedWorkloadProfileName
+    // D4 provides a dedicated compute profile with 4 vCPUs and 16 GiB memory for the container apps environment.
     workloadProfileType: 'D4'
-    minimumCount: 1
-    maximumCount: 1
+    minimumCount: dedicatedWorkloadProfileMinCount
+    maximumCount: dedicatedWorkloadProfileMaxCount
   }
 ]
 
-var singleReplicaScaleSettings = {
-  minReplicas: 1
-  maxReplicas: 1
+var containerAppScaleSettings = {
+  minReplicas: containerAppMinReplicas
+  maxReplicas: containerAppMaxReplicas
 }
 
 // ── User-Assigned Managed Identity ───────────────────────────────────────────
@@ -143,7 +161,7 @@ module authnApp 'br/public:avm/res/app/container-app:0.11.0' = {
     ]
     ingressTargetPort: 5000
     ingressExternal: false
-    scaleSettings: singleReplicaScaleSettings
+    scaleSettings: containerAppScaleSettings
     workloadProfileName: dedicatedWorkloadProfileName
     diagnosticSettings: logAnalyticsDiagnosticSettings
   }
@@ -174,7 +192,7 @@ module galleryApp 'br/public:avm/res/app/container-app:0.11.0' = {
     ]
     ingressTargetPort: 8081
     ingressExternal: false
-    scaleSettings: singleReplicaScaleSettings
+    scaleSettings: containerAppScaleSettings
     workloadProfileName: dedicatedWorkloadProfileName
     diagnosticSettings: logAnalyticsDiagnosticSettings
   }
@@ -205,7 +223,7 @@ module storageApp 'br/public:avm/res/app/container-app:0.11.0' = {
     ]
     ingressTargetPort: 8082
     ingressExternal: false
-    scaleSettings: singleReplicaScaleSettings
+    scaleSettings: containerAppScaleSettings
     workloadProfileName: dedicatedWorkloadProfileName
     diagnosticSettings: logAnalyticsDiagnosticSettings
   }
@@ -236,7 +254,7 @@ module frontendApp 'br/public:avm/res/app/container-app:0.11.0' = {
     ]
     ingressTargetPort: 80
     ingressExternal: true
-    scaleSettings: singleReplicaScaleSettings
+    scaleSettings: containerAppScaleSettings
     workloadProfileName: dedicatedWorkloadProfileName
     diagnosticSettings: logAnalyticsDiagnosticSettings
   }
