@@ -14,10 +14,43 @@ param tags object = {}
 @description('Container image tag to deploy for all services.')
 param imageTag string = 'latest'
 
+@description('Minimum number of replicas to configure for each container app.')
+@minValue(1)
+param containerAppMinReplicas int = 1
+
+@description('Maximum number of replicas to configure for each container app.')
+@minValue(1)
+param containerAppMaxReplicas int = 1
+
+@description('Minimum number of dedicated workload profile instances for the managed environment.')
+@minValue(1)
+param dedicatedWorkloadProfileMinCount int = 1
+
+@description('Maximum number of dedicated workload profile instances for the managed environment.')
+@minValue(1)
+param dedicatedWorkloadProfileMaxCount int = 1
+
 // Default resource allocation for each container app
 var containerResources = {
   cpu: json('0.25')
   memory: '0.5Gi'
+}
+
+// Dedicated workload profile for the container apps environment.
+var dedicatedWorkloadProfileName = 'dedicatedWorkloadProfile'
+var dedicatedWorkloadProfile = [
+  {
+    name: dedicatedWorkloadProfileName
+    // D4 provides a dedicated compute profile with 4 vCPUs and 16 GiB memory for the container apps environment.
+    workloadProfileType: 'D4'
+    minimumCount: dedicatedWorkloadProfileMinCount
+    maximumCount: dedicatedWorkloadProfileMaxCount
+  }
+]
+
+var containerAppScaleSettings = {
+  minReplicas: containerAppMinReplicas
+  maxReplicas: containerAppMaxReplicas
 }
 
 // ── User-Assigned Managed Identity ───────────────────────────────────────────
@@ -66,6 +99,23 @@ module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0
   }
 }
 
+var logAnalyticsDiagnosticSettings = [
+  {
+    name: 'diag-${environmentName}'
+    workspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
+    logCategoriesAndGroups: [
+      {
+        categoryGroup: 'allLogs'
+      }
+    ]
+    metricCategories: [
+      {
+        category: 'AllMetrics'
+      }
+    ]
+  }
+]
+
 // ── Azure Container Apps Environment ─────────────────────────────────────────
 
 module managedEnvironment 'br/public:avm/res/app/managed-environment:0.10.1' = {
@@ -76,6 +126,11 @@ module managedEnvironment 'br/public:avm/res/app/managed-environment:0.10.1' = {
     tags: tags
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
     zoneRedundant: false
+    workloadProfiles: dedicatedWorkloadProfile
+    appLogsConfiguration: {
+      destination: 'log-analytics'
+      logAnalyticsWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
+    }
   }
 }
 
@@ -106,6 +161,9 @@ module authnApp 'br/public:avm/res/app/container-app:0.11.0' = {
     ]
     ingressTargetPort: 5000
     ingressExternal: false
+    scaleSettings: containerAppScaleSettings
+    workloadProfileName: dedicatedWorkloadProfileName
+    diagnosticSettings: logAnalyticsDiagnosticSettings
   }
 }
 
@@ -134,6 +192,9 @@ module galleryApp 'br/public:avm/res/app/container-app:0.11.0' = {
     ]
     ingressTargetPort: 8081
     ingressExternal: false
+    scaleSettings: containerAppScaleSettings
+    workloadProfileName: dedicatedWorkloadProfileName
+    diagnosticSettings: logAnalyticsDiagnosticSettings
   }
 }
 
@@ -162,6 +223,9 @@ module storageApp 'br/public:avm/res/app/container-app:0.11.0' = {
     ]
     ingressTargetPort: 8082
     ingressExternal: false
+    scaleSettings: containerAppScaleSettings
+    workloadProfileName: dedicatedWorkloadProfileName
+    diagnosticSettings: logAnalyticsDiagnosticSettings
   }
 }
 
@@ -190,6 +254,9 @@ module frontendApp 'br/public:avm/res/app/container-app:0.11.0' = {
     ]
     ingressTargetPort: 80
     ingressExternal: true
+    scaleSettings: containerAppScaleSettings
+    workloadProfileName: dedicatedWorkloadProfileName
+    diagnosticSettings: logAnalyticsDiagnosticSettings
   }
 }
 
@@ -239,6 +306,7 @@ module authnWebApp 'br/public:avm/res/web/site:0.23.1' = {
         }
       ]
     }
+    diagnosticSettings: logAnalyticsDiagnosticSettings
   }
 }
 
@@ -269,6 +337,7 @@ module galleryWebApp 'br/public:avm/res/web/site:0.23.1' = {
         }
       ]
     }
+    diagnosticSettings: logAnalyticsDiagnosticSettings
   }
 }
 
@@ -299,6 +368,7 @@ module storageWebApp 'br/public:avm/res/web/site:0.23.1' = {
         }
       ]
     }
+    diagnosticSettings: logAnalyticsDiagnosticSettings
   }
 }
 
@@ -329,6 +399,7 @@ module frontendWebApp 'br/public:avm/res/web/site:0.23.1' = {
         }
       ]
     }
+    diagnosticSettings: logAnalyticsDiagnosticSettings
   }
 }
 
