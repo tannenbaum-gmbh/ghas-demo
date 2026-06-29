@@ -37,7 +37,7 @@ var containerResources = {
 }
 
 // Dedicated workload profile for the container apps environment.
-var dedicatedWorkloadProfileName = 'dedicatedWP'
+var dedicatedWorkloadProfileName = 'dedicated-prof'
 var dedicatedWorkloadProfile = [
   {
     name: dedicatedWorkloadProfileName
