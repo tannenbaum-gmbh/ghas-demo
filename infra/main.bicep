@@ -118,7 +118,7 @@ var logAnalyticsDiagnosticSettings = [
 
 // ── Azure Container Apps Environment ─────────────────────────────────────────
 
-module managedEnvironment 'br/public:avm/res/app/managed-environment:0.10.1' = {
+module managedEnvironment 'br/public:avm/res/app/managed-environment:0.13.3' = {
   name: 'managedEnvironment'
   params: {
     name: 'cae-${environmentName}'
@@ -136,7 +136,7 @@ module managedEnvironment 'br/public:avm/res/app/managed-environment:0.10.1' = {
 
 // ── Container Apps ───────────────────────────────────────────────────────────
 
-module authnApp 'br/public:avm/res/app/container-app:0.11.0' = {
+module authnApp 'br/public:avm/res/app/container-app:0.22.1' = {
   name: 'authnApp'
   params: {
     name: 'ca-authn-${environmentName}'
@@ -167,7 +167,7 @@ module authnApp 'br/public:avm/res/app/container-app:0.11.0' = {
   }
 }
 
-module galleryApp 'br/public:avm/res/app/container-app:0.11.0' = {
+module galleryApp 'br/public:avm/res/app/container-app:0.22.1' = {
   name: 'galleryApp'
   params: {
     name: 'ca-gallery-${environmentName}'
@@ -198,7 +198,7 @@ module galleryApp 'br/public:avm/res/app/container-app:0.11.0' = {
   }
 }
 
-module storageApp 'br/public:avm/res/app/container-app:0.11.0' = {
+module storageApp 'br/public:avm/res/app/container-app:0.22.1' = {
   name: 'storageApp'
   params: {
     name: 'ca-storage-${environmentName}'
@@ -229,7 +229,7 @@ module storageApp 'br/public:avm/res/app/container-app:0.11.0' = {
   }
 }
 
-module frontendApp 'br/public:avm/res/app/container-app:0.11.0' = {
+module frontendApp 'br/public:avm/res/app/container-app:0.22.1' = {
   name: 'frontendApp'
   params: {
     name: 'ca-frontend-${environmentName}'
