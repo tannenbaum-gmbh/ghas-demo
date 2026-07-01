@@ -243,6 +243,16 @@ module frontendApp 'br/public:avm/res/app/container-app:0.22.1' = {
       {
         name: 'frontend'
         image: '${containerRegistry.outputs.loginServer}/frontend:${imageTag}'
+        env: [
+          {
+            name: 'AUTHN_BASE_URL'
+            value: 'http://ca-authn-${environmentName}:5000'
+          }
+          {
+            name: 'GALLERY_BASE_URL'
+            value: 'http://ca-gallery-${environmentName}:8081'
+          }
+        ]
         resources: containerResources
       }
     ]
@@ -426,6 +436,14 @@ module frontendWebApp 'br/public:avm/res/web/site:0.23.1' = {
         {
           name: 'DOCKER_REGISTRY_SERVER_URL'
           value: 'https://${containerRegistry.outputs.loginServer}'
+        }
+        {
+          name: 'AUTHN_BASE_URL'
+          value: 'https://${authnWebApp.outputs.defaultHostname}'
+        }
+        {
+          name: 'GALLERY_BASE_URL'
+          value: 'https://${galleryWebApp.outputs.defaultHostname}'
         }
         {
           name: 'WEBSITES_PORT'

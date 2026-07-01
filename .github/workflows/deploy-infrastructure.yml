@@ -68,6 +68,8 @@ jobs:
         env:
           ACR_LOGIN_SERVER: ${{ steps.bicep.outputs.containerRegistryLoginServer }}
           IMAGE_TAG: ${{ inputs.image_tag || 'latest' }}
+          AUTHN_BASE_URL: http://authn-service.ghas-demo.svc.cluster.local:5000
+          GALLERY_BASE_URL: http://gallery-service.ghas-demo.svc.cluster.local:8081
         run: |
           envsubst < infra/k8s/namespace.yaml | kubectl apply -f -
           for f in infra/k8s/authn-service.yaml infra/k8s/gallery-service.yaml infra/k8s/storage-service.yaml infra/k8s/frontend.yaml; do

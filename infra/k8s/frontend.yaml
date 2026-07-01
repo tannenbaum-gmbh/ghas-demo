@@ -19,6 +19,11 @@ spec:
         - name: frontend
           image: ${ACR_LOGIN_SERVER}/frontend:${IMAGE_TAG}
           imagePullPolicy: Always
+          env:
+            - name: AUTHN_BASE_URL
+              value: ${AUTHN_BASE_URL}
+            - name: GALLERY_BASE_URL
+              value: ${GALLERY_BASE_URL}
           ports:
             - containerPort: 80
           resources:
