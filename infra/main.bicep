@@ -272,14 +272,16 @@ module aksCluster 'br/public:avm/res/container-service/managed-cluster:0.4.1' = 
     name: 'aks-${environmentName}'
     location: location
     tags: tags
-    primaryAgentPoolProfile: {
-      name: 'systempool'
-      count: 1
-      vmSize: 'Standard_B2s'
-      mode: 'System'
-      osType: 'Linux'
-      type: 'VirtualMachineScaleSets'
-    }
+    primaryAgentPoolProfiles: [
+      {
+        name: 'systempool'
+        count: 1
+        vmSize: 'Standard_B2s'
+        mode: 'System'
+        osType: 'Linux'
+        type: 'VirtualMachineScaleSets'
+      }
+    ]
     managedIdentities: {
       systemAssigned: true
     }
@@ -294,7 +296,7 @@ resource acrForAks 'Microsoft.ContainerRegistry/registries@2023-07-01' existing 
 
 // Grant the AKS kubelet managed identity the AcrPull role on the container registry
 resource acrPullForAks 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(acrForAks.id, aksCluster.outputs.kubeletIdentityObjectId, acrPullRoleDefinitionId)
+  name: guid(acrForAks.id, 'aks-${environmentName}', acrPullRoleDefinitionId)
   scope: acrForAks
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', acrPullRoleDefinitionId)
