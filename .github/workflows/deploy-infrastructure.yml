@@ -41,6 +41,7 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Deploy Bicep template
+        id: bicep
         uses: azure/arm-deploy@v2
         with:
           scope: resourcegroup
@@ -50,3 +51,27 @@ jobs:
             infra/main.bicepparam
             imageTag=${{ inputs.image_tag || 'latest' }}
           failOnStdErr: true
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Install envsubst
+        run: sudo apt-get update && sudo apt-get install -y gettext-base
+
+      - name: Get AKS credentials
+        run: |
+          az aks get-credentials \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --name "${{ steps.bicep.outputs.aksClusterName }}" \
+            --overwrite-existing
+      - name: Deploy to AKS
+        env:
+          ACR_LOGIN_SERVER: ${{ steps.bicep.outputs.containerRegistryLoginServer }}
+          IMAGE_TAG: ${{ inputs.image_tag || 'latest' }}
+          AUTHN_BASE_URL: http://authn-service.ghas-demo.svc.cluster.local:5000
+          GALLERY_BASE_URL: http://gallery-service.ghas-demo.svc.cluster.local:8081
+        run: |
+          envsubst < infra/k8s/namespace.yaml | kubectl apply -f -
+          for f in infra/k8s/authn-service.yaml infra/k8s/gallery-service.yaml infra/k8s/storage-service.yaml infra/k8s/frontend.yaml; do
+            envsubst < "$f" | kubectl apply -f -
+          done

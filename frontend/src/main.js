@@ -18,6 +18,10 @@ Vue.use(VueRouter)
 
 Vue.prototype.$http = Axios
 
+const appConfig = window.__APP_CONFIG__ || {}
+const authnBaseUrl = (appConfig.AUTHN_BASE_URL || "http://localhost:5000").replace(/\/$/, '')
+const galleryBaseUrl = (appConfig.GALLERY_BASE_URL || "http://localhost:8081").replace(/\/$/, '')
+
 const jwt = {
   decode(token) {
     if (!token) return {}
@@ -62,7 +66,7 @@ const store = new Vuex.Store({
   actions: {
     authenticate({ commit }, {code, state}) {
       return new Promise((resolve, reject) => {
-        Axios.get(`http://localhost:5000/authenticate/${code}`).then((response) => {
+        Axios.get(`${authnBaseUrl}/authenticate/${code}`).then((response) => {
           if (response.data.token) {
             const token = response.data.token
             console.log("Authenticated with token", token)
@@ -105,10 +109,10 @@ const store = new Vuex.Store({
     refreshGallery({commit}) {
       console.log("Triggering gallery refresh")
       return new Promise((resolve, reject) => {
-        Axios.get("http://localhost:8081/gallery").then((response) => {
+        Axios.get(`${galleryBaseUrl}/gallery`).then((response) => {
           console.log("Refreshed gallery with:", response.data)
           const gallery = response.data
-          Axios.get("http://localhost:8081/gallery/art").then((response) => {
+          Axios.get(`${galleryBaseUrl}/gallery/art`).then((response) => {
             gallery.art = response.data
             commit('gallery', gallery)
             resolve()
