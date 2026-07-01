@@ -254,6 +254,46 @@ module frontendApp 'br/public:avm/res/app/container-app:0.22.1' = {
   }
 }
 
+// ── Azure Kubernetes Service (single node) ───────────────────────────────────
+
+module aksCluster 'br/public:avm/res/container-service/managed-cluster:0.4.1' = {
+  name: 'aksCluster'
+  params: {
+    name: 'aks-${environmentName}'
+    location: location
+    tags: tags
+    primaryAgentPoolProfile: {
+      name: 'systempool'
+      count: 1
+      vmSize: 'Standard_B2s'
+      mode: 'System'
+      osType: 'Linux'
+      type: 'VirtualMachineScaleSets'
+    }
+    managedIdentities: {
+      systemAssigned: true
+    }
+    diagnosticSettings: logAnalyticsDiagnosticSettings
+  }
+}
+
+// Existing ACR reference used to scope the kubelet identity role assignment
+resource acrForAks 'Microsoft.ContainerRegistry/registries@2023-07-01' existing = {
+  name: acrName
+}
+
+// Grant the AKS kubelet managed identity the AcrPull role on the container registry
+resource acrPullForAks 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(acrForAks.id, aksCluster.outputs.kubeletIdentityObjectId, acrPullRoleDefinitionId)
+  scope: acrForAks
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', acrPullRoleDefinitionId)
+    principalId: aksCluster.outputs.kubeletIdentityObjectId
+    principalType: 'ServicePrincipal'
+  }
+  dependsOn: [containerRegistry]
+}
+
 // ── App Service Plan (B1, Linux) ─────────────────────────────────────────────
 
 var webAppSuffix = take(uniqueString(resourceGroup().id), 8)
@@ -428,3 +468,9 @@ output storageWebAppHostname string = storageWebApp.outputs.defaultHostname
 
 @description('Default hostname of the frontend App Service Web App.')
 output frontendWebAppHostname string = frontendWebApp.outputs.defaultHostname
+
+@description('Name of the AKS cluster.')
+output aksClusterName string = aksCluster.outputs.name
+
+@description('Resource ID of the AKS cluster.')
+output aksClusterResourceId string = aksCluster.outputs.resourceId
