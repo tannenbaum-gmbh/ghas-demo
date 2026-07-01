@@ -52,13 +52,18 @@ jobs:
             imageTag=${{ inputs.image_tag || 'latest' }}
           failOnStdErr: true
 
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Install envsubst
+        run: sudo apt-get update && sudo apt-get install -y gettext-base
+
       - name: Get AKS credentials
         run: |
           az aks get-credentials \
             --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
             --name "${{ steps.bicep.outputs.aksClusterName }}" \
             --overwrite-existing
-
       - name: Deploy to AKS
         env:
           ACR_LOGIN_SERVER: ${{ steps.bicep.outputs.containerRegistryLoginServer }}

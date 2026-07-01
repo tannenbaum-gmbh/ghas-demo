@@ -3,4 +3,4 @@ kind: Namespace
 metadata:
   name: ghas-demo
   labels:
-    app.kubernetes.io/managed-by: bicep
+    app.kubernetes.io/managed-by: github-actions
