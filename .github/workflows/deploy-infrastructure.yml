@@ -55,26 +55,25 @@ jobs:
       - name: Install kubectl
         uses: azure/setup-kubectl@v4
 
-      - name: Install kubelogin
-        uses: azure/use-kubelogin@v1
-
-      - name: Install envsubst
-        run: sudo apt-get update && sudo apt-get install -y gettext-base
-
       - name: Get AKS credentials
         run: |
           az aks get-credentials \
             --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
             --name "${{ steps.bicep.outputs.aksClusterName }}" \
+            --admin \
             --overwrite-existing
       - name: Deploy to AKS
         env:
           ACR_LOGIN_SERVER: ${{ steps.bicep.outputs.containerRegistryLoginServer }}
           IMAGE_TAG: ${{ inputs.image_tag || 'latest' }}
-          AUTHN_BASE_URL: http://authn-service.ghas-demo.svc.cluster.local:5000
-          GALLERY_BASE_URL: http://gallery-service.ghas-demo.svc.cluster.local:8081
+          K8S_NAMESPACE: ghas-demo
         run: |
-          envsubst < infra/k8s/namespace.yaml | kubectl apply -f -
-          for f in infra/k8s/authn-service.yaml infra/k8s/gallery-service.yaml infra/k8s/storage-service.yaml infra/k8s/frontend.yaml; do
-            envsubst < "$f" | kubectl apply -f -
+          kubectl apply -f infra/k8s/namespace.yaml
+
+          for service in authn-service gallery-service storage-service; do
+            kubectl set image -f "infra/k8s/${service}.yaml" "${service}=${ACR_LOGIN_SERVER}/${service}:${IMAGE_TAG}" --local -o yaml | kubectl apply -f -
           done
+
+          kubectl set image -f infra/k8s/frontend.yaml frontend="${ACR_LOGIN_SERVER}/frontend:${IMAGE_TAG}" --local -o yaml \
+            | kubectl set env --local -f - AUTHN_BASE_URL="http://authn-service.${K8S_NAMESPACE}.svc.cluster.local:5000" GALLERY_BASE_URL="http://gallery-service.${K8S_NAMESPACE}.svc.cluster.local:8081" -o yaml \
+            | kubectl apply -f -
