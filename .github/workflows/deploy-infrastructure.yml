@@ -66,14 +66,14 @@ jobs:
         env:
           ACR_LOGIN_SERVER: ${{ steps.bicep.outputs.containerRegistryLoginServer }}
           IMAGE_TAG: ${{ inputs.image_tag || 'latest' }}
+          K8S_NAMESPACE: ghas-demo
         run: |
-          K8S_NAMESPACE=ghas-demo
-
           kubectl apply -f infra/k8s/namespace.yaml
 
-          kubectl set image -f infra/k8s/authn-service.yaml authn-service="${ACR_LOGIN_SERVER}/authn-service:${IMAGE_TAG}" --local -o yaml | kubectl apply -f -
-          kubectl set image -f infra/k8s/gallery-service.yaml gallery-service="${ACR_LOGIN_SERVER}/gallery-service:${IMAGE_TAG}" --local -o yaml | kubectl apply -f -
-          kubectl set image -f infra/k8s/storage-service.yaml storage-service="${ACR_LOGIN_SERVER}/storage-service:${IMAGE_TAG}" --local -o yaml | kubectl apply -f -
+          for service in authn-service gallery-service storage-service; do
+            kubectl set image -f "infra/k8s/${service}.yaml" "${service}=${ACR_LOGIN_SERVER}/${service}:${IMAGE_TAG}" --local -o yaml | kubectl apply -f -
+          done
+
           kubectl set image -f infra/k8s/frontend.yaml frontend="${ACR_LOGIN_SERVER}/frontend:${IMAGE_TAG}" --local -o yaml \
             | kubectl set env --local -f - AUTHN_BASE_URL="http://authn-service.${K8S_NAMESPACE}.svc.cluster.local:5000" GALLERY_BASE_URL="http://gallery-service.${K8S_NAMESPACE}.svc.cluster.local:8081" -o yaml \
             | kubectl apply -f -
