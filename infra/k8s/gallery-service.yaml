@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: gallery-service
-          image: ${ACR_LOGIN_SERVER}/gallery-service:${IMAGE_TAG}
+          image: invalid.example/gallery-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8081

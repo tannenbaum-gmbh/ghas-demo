@@ -17,13 +17,13 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: ${ACR_LOGIN_SERVER}/frontend:${IMAGE_TAG}
+          image: invalid.example/frontend:latest
           imagePullPolicy: Always
           env:
             - name: AUTHN_BASE_URL
-              value: ${AUTHN_BASE_URL}
+              value: http://authn-service.ghas-demo.svc.cluster.local:5000
             - name: GALLERY_BASE_URL
-              value: ${GALLERY_BASE_URL}
+              value: http://gallery-service.ghas-demo.svc.cluster.local:8081
           ports:
             - containerPort: 80
           resources:

@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: storage-service
-          image: ${ACR_LOGIN_SERVER}/storage-service:${IMAGE_TAG}
+          image: invalid.example/storage-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8082

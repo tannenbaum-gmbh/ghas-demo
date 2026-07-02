@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: authn-service
-          image: ${ACR_LOGIN_SERVER}/authn-service:${IMAGE_TAG}
+          image: invalid.example/authn-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 5000
