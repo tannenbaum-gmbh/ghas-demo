@@ -281,7 +281,7 @@ module aksCluster 'br/public:avm/res/container-service/managed-cluster:0.4.1' = 
         osType: 'Linux'
         type: 'VirtualMachineScaleSets'
         availabilityZones: [
-          '1'
+          1
         ]
       }
     ]
