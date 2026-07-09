@@ -60,7 +60,6 @@ jobs:
           az aks get-credentials \
             --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
             --name "${{ steps.bicep.outputs.aksClusterName }}" \
-            --admin \
             --overwrite-existing
       - name: Deploy to AKS
         env:
