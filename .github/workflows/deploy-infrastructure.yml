@@ -40,6 +40,13 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Resolve OIDC principal ID
+        id: oidc-principal
+        shell: bash
+        run: |
+          principal_id="$(az ad sp show --id "${{ secrets.AZURE_CLIENT_ID }}" --query id -o tsv)"
+          echo "principal-id=${principal_id}" >> "$GITHUB_OUTPUT"
+
       - name: Deploy Bicep template
         id: bicep
         uses: azure/arm-deploy@v2
@@ -50,7 +57,7 @@ jobs:
           parameters: >
             infra/main.bicepparam
             imageTag=${{ inputs.image_tag || 'latest' }}
-            githubOidcPrincipalId=${{ secrets.AZURE_CLIENT_ID }}
+            githubOidcPrincipalId=${{ steps.oidc-principal.outputs.principal-id }}
           failOnStdErr: true
 
       - name: Install kubectl
