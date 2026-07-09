@@ -286,7 +286,7 @@ module aksCluster 'br/public:avm/res/container-service/managed-cluster:0.4.1' = 
       }
     ]
     managedIdentities: {
-      userAssignedResourceIds: [managedIdentity.outputs.resourceId]
+      userAssignedResourcesIds: [managedIdentity.outputs.resourceId]
     }
     diagnosticSettings: logAnalyticsDiagnosticSettings
   }
