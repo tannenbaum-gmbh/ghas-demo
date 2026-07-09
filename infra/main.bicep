@@ -274,12 +274,12 @@ module frontendApp 'br/public:avm/res/app/container-app:0.22.1' = {
 
 // Built-in role definition ID for Azure Kubernetes Service Cluster User Role
 var aksClusterUserRoleDefinitionId = 'b1ff04bb-8a4e-4dc4-8eb5-8693973ce19b'
-var aksClusterUserRolePrincipalIds = empty(githubOidcPrincipalId) || githubOidcPrincipalId == managedIdentity.outputs.principalId
-  ? [managedIdentity.outputs.principalId]
-  : [
-      managedIdentity.outputs.principalId
-      githubOidcPrincipalId
-    ]
+var aksClusterUserRolePrincipalIds = concat(
+  [managedIdentity.outputs.principalId]
+  empty(githubOidcPrincipalId) || githubOidcPrincipalId == managedIdentity.outputs.principalId
+    ? []
+    : [githubOidcPrincipalId]
+)
 
 module aksCluster 'br/public:avm/res/container-service/managed-cluster:0.4.1' = {
   name: 'aksCluster'
