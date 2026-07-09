@@ -286,27 +286,10 @@ module aksCluster 'br/public:avm/res/container-service/managed-cluster:0.4.1' = 
       }
     ]
     managedIdentities: {
-      systemAssigned: true
+      userAssignedResourceIds: [managedIdentity.outputs.resourceId]
     }
     diagnosticSettings: logAnalyticsDiagnosticSettings
   }
-}
-
-// Existing ACR reference used to scope the kubelet identity role assignment
-resource acrForAks 'Microsoft.ContainerRegistry/registries@2023-07-01' existing = {
-  name: acrName
-}
-
-// Grant the AKS kubelet managed identity the AcrPull role on the container registry
-resource acrPullForAks 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(acrForAks.id, 'aks-${environmentName}', acrPullRoleDefinitionId)
-  scope: acrForAks
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', acrPullRoleDefinitionId)
-    principalId: aksCluster.outputs.kubeletIdentityObjectId
-    principalType: 'ServicePrincipal'
-  }
-  dependsOn: [containerRegistry]
 }
 
 // ── App Service Plan (B1, Linux) ─────────────────────────────────────────────
