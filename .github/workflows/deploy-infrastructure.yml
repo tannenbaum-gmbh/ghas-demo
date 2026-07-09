@@ -44,7 +44,12 @@ jobs:
         id: oidc-principal
         shell: bash
         run: |
+          set -euo pipefail
           principal_id="$(az ad sp show --id "${{ secrets.AZURE_CLIENT_ID }}" --query id -o tsv)"
+          if [ -z "${principal_id}" ]; then
+            echo "Failed to resolve principal ID from AZURE_CLIENT_ID"
+            exit 1
+          fi
           echo "principal-id=${principal_id}" >> "$GITHUB_OUTPUT"
 
       - name: Deploy Bicep template
