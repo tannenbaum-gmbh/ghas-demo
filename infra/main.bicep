@@ -269,6 +269,9 @@ module frontendApp 'br/public:avm/res/app/container-app:0.22.1' = {
 
 // ── Azure Kubernetes Service (single node) ───────────────────────────────────
 
+// Built-in role definition ID for Azure Kubernetes Service Cluster User Role
+var aksClusterUserRoleDefinitionId = 'b1ff04bb-8a4e-4dc4-8eb5-8693973ce19b'
+
 module aksCluster 'br/public:avm/res/container-service/managed-cluster:0.4.1' = {
   name: 'aksCluster'
   params: {
@@ -288,6 +291,13 @@ module aksCluster 'br/public:avm/res/container-service/managed-cluster:0.4.1' = 
     managedIdentities: {
       userAssignedResourcesIds: [managedIdentity.outputs.resourceId]
     }
+    roleAssignments: [
+      {
+        principalId: managedIdentity.outputs.principalId
+        roleDefinitionIdOrName: aksClusterUserRoleDefinitionId
+        principalType: 'ServicePrincipal'
+      }
+    ]
     diagnosticSettings: logAnalyticsDiagnosticSettings
   }
 }
