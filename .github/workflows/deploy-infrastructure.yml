@@ -72,6 +72,9 @@ jobs:
       - name: Install kubectl
         uses: azure/setup-kubectl@v4
 
+      - name: Install kubelogin
+        run: az aks install-cli
+
       - name: Get AKS credentials
         run: |
           az aks get-credentials \
