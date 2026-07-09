@@ -3,6 +3,9 @@ targetScope = 'resourceGroup'
 @description('Azure region for all resources.')
 param location string = resourceGroup().location
 
+@description('Azure region for the AKS cluster (may differ from the main location).')
+param aksLocation string = location
+
 @description('Environment name used as a suffix for resource names.')
 @minLength(1)
 @maxLength(10)
@@ -270,7 +273,7 @@ module aksCluster 'br/public:avm/res/container-service/managed-cluster:0.4.1' = 
   name: 'aksCluster'
   params: {
     name: 'aks-${environmentName}'
-    location: location
+    location: aksLocation
     tags: tags
     primaryAgentPoolProfiles: [
       {
