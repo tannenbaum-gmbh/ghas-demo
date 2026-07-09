@@ -50,6 +50,7 @@ jobs:
           parameters: >
             infra/main.bicepparam
             imageTag=${{ inputs.image_tag || 'latest' }}
+            githubOidcPrincipalId=${{ secrets.AZURE_CLIENT_ID }}
           failOnStdErr: true
 
       - name: Install kubectl

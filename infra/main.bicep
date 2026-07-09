@@ -17,6 +17,9 @@ param tags object = {}
 @description('Container image tag to deploy for all services.')
 param imageTag string = 'latest'
 
+@description('Principal ID for the GitHub OIDC identity used by workflow deployments.')
+param githubOidcPrincipalId string = ''
+
 @description('Minimum number of replicas to configure for each container app.')
 @minValue(1)
 param containerAppMinReplicas int = 1
@@ -291,13 +294,15 @@ module aksCluster 'br/public:avm/res/container-service/managed-cluster:0.4.1' = 
     managedIdentities: {
       userAssignedResourcesIds: [managedIdentity.outputs.resourceId]
     }
-    roleAssignments: [
-      {
-        principalId: managedIdentity.outputs.principalId
-        roleDefinitionIdOrName: aksClusterUserRoleDefinitionId
-        principalType: 'ServicePrincipal'
-      }
-    ]
+    roleAssignments: empty(githubOidcPrincipalId)
+      ? []
+      : [
+          {
+            principalId: githubOidcPrincipalId
+            roleDefinitionIdOrName: aksClusterUserRoleDefinitionId
+            principalType: 'ServicePrincipal'
+          }
+        ]
     diagnosticSettings: logAnalyticsDiagnosticSettings
   }
 }
