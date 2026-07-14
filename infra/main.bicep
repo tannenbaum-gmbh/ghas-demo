@@ -81,10 +81,6 @@ module kubeletIdentity 'br/public:avm/res/managed-identity/user-assigned-identit
   }
 }
 
-resource kubeletManagedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = {
-  name: 'id-kubelet-${environmentName}'
-}
-
 // ── Azure Container Registry ──────────────────────────────────────────────────
 
 // Built-in role definition ID for AcrPull
@@ -297,13 +293,13 @@ var aksClusterUserRoleDefinitionId = 'b1ff04bb-8a4e-4dc4-8eb5-8693973ce19b'
 var managedIdentityOperatorRoleDefinitionId = 'f1a07417-d97a-45cb-824c-7a7467783830'
 var aksClusterUserRolePrincipalIds = empty(githubOidcPrincipalId) ? [] : [githubOidcPrincipalId]
 
-resource kubeletManagedIdentityOperatorRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+resource kubeletIdentityOperatorRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(
-    kubeletManagedIdentity.id,
+    kubeletIdentity.id,
     'id-${environmentName}',
     managedIdentityOperatorRoleDefinitionId
   )
-  scope: kubeletManagedIdentity
+  scope: kubeletIdentity
   properties: {
     principalId: managedIdentity.outputs.principalId
     roleDefinitionId: subscriptionResourceId(
