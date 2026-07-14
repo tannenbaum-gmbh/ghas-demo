@@ -79,7 +79,5 @@ jobs:
     with:
       image_tag: ${{ inputs.image_tag }}
       aks_cluster_name: ${{ needs.deploy.outputs.aksClusterName }}
-      aks_kubelet_object_id: ${{ needs.deploy.outputs.aksKubeletIdentityObjectId }}
-      container_registry_resource_id: ${{ needs.deploy.outputs.containerRegistryResourceId }}
       container_registry_login_server: ${{ needs.deploy.outputs.containerRegistryLoginServer }}
     secrets: inherit

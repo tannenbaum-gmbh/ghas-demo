@@ -20,9 +20,6 @@ param imageTag string = 'latest'
 @description('Principal ID for the GitHub OIDC identity used by workflow deployments.')
 param githubOidcPrincipalId string = ''
 
-@description('Optional object ID override for the AKS kubelet identity that should receive AcrPull on the registry.')
-param aksKubeletObjectId string = ''
-
 @description('Minimum number of replicas to configure for each container app.')
 @minValue(1)
 param containerAppMinReplicas int = 1
@@ -73,6 +70,17 @@ module managedIdentity 'br/public:avm/res/managed-identity/user-assigned-identit
   }
 }
 
+// ── Kubelet User-Assigned Managed Identity ────────────────────────────────────
+
+module kubeletIdentity 'br/public:avm/res/managed-identity/user-assigned-identity:0.4.1' = {
+  name: 'kubeletIdentity'
+  params: {
+    name: 'id-kubelet-${environmentName}'
+    location: location
+    tags: tags
+  }
+}
+
 // ── Azure Container Registry ──────────────────────────────────────────────────
 
 // Built-in role definition ID for AcrPull
@@ -90,6 +98,11 @@ module containerRegistry 'br/public:avm/res/container-registry/registry:0.9.1' =
     roleAssignments: [
       {
         principalId: managedIdentity.outputs.principalId
+        roleDefinitionIdOrName: acrPullRoleDefinitionId
+        principalType: 'ServicePrincipal'
+      }
+      {
+        principalId: kubeletIdentity.outputs.principalId
         roleDefinitionIdOrName: acrPullRoleDefinitionId
         principalType: 'ServicePrincipal'
       }
@@ -311,6 +324,13 @@ module aksCluster 'br/public:avm/res/container-service/managed-cluster:0.13.1' =
     managedIdentities: {
       userAssignedResourceIds: [managedIdentity.outputs.resourceId]
     }
+    identityProfile: {
+      kubeletidentity: {
+        resourceId: kubeletIdentity.outputs.resourceId
+        clientId: kubeletIdentity.outputs.clientId
+        objectId: kubeletIdentity.outputs.principalId
+      }
+    }
     roleAssignments: [
       for principalId in aksClusterUserRolePrincipalIds: {
         principalId: principalId
@@ -320,23 +340,7 @@ module aksCluster 'br/public:avm/res/container-service/managed-cluster:0.13.1' =
     ]
     diagnosticSettings: logAnalyticsDiagnosticSettings
   }
-}
-
-resource containerRegistryResource 'Microsoft.ContainerRegistry/registries@2023-07-01' existing = {
-  name: last(split(containerRegistry.outputs.resourceId, '/'))
-}
-
-var aksClusterReference = reference(aksCluster.outputs.resourceId, '2024-10-01')
-var resolvedAksKubeletObjectId = empty(aksKubeletObjectId) ? (aksClusterReference.?identityProfile.?kubeletidentity.?objectId ?? '') : aksKubeletObjectId
-
-resource aksKubeletAcrPullRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(resolvedAksKubeletObjectId)) {
-  name: guid(containerRegistry.outputs.resourceId, acrPullRoleDefinitionId, resolvedAksKubeletObjectId)
-  scope: containerRegistryResource
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', acrPullRoleDefinitionId)
-    principalId: resolvedAksKubeletObjectId
-    principalType: 'ServicePrincipal'
-  }
+  dependsOn: [containerRegistry]
 }
 
 // ── App Service Plan (B1, Linux) ─────────────────────────────────────────────
@@ -527,6 +531,3 @@ output aksClusterName string = aksCluster.outputs.name
 
 @description('Resource ID of the AKS cluster.')
 output aksClusterResourceId string = aksCluster.outputs.resourceId
-
-@description('Object ID of the AKS kubelet identity.')
-output aksKubeletIdentityObjectId string = resolvedAksKubeletObjectId
