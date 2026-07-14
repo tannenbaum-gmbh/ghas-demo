@@ -326,7 +326,8 @@ resource containerRegistryResource 'Microsoft.ContainerRegistry/registries@2023-
   name: last(split(containerRegistry.outputs.resourceId, '/'))
 }
 
-var resolvedAksKubeletObjectId = empty(aksKubeletObjectId) ? (aksCluster.outputs.kubeletIdentityObjectId ?? '') : aksKubeletObjectId
+var aksClusterReference = reference(aksCluster.outputs.resourceId, '2024-10-01')
+var resolvedAksKubeletObjectId = empty(aksKubeletObjectId) ? (aksClusterReference.?identityProfile.?kubeletidentity.?objectId ?? '') : aksKubeletObjectId
 
 resource aksKubeletAcrPullRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(resolvedAksKubeletObjectId)) {
   name: guid(containerRegistry.outputs.resourceId, acrPullRoleDefinitionId, resolvedAksKubeletObjectId)
