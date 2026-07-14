@@ -15,6 +15,8 @@ spec:
       labels:
         app: authn-service
     spec:
+      nodeSelector:
+        kubernetes.azure.com/agentpool: workerpool
       containers:
         - name: authn-service
           image: ${ACR_LOGIN_SERVER}/authn-service:${IMAGE_TAG}
