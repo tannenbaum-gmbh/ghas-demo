@@ -7,6 +7,7 @@ on:
     paths:
       - 'infra/**'
       - '.github/workflows/deploy-infrastructure.yml'
+      - '.github/workflows/deploy-to-aks.yml'
   workflow_dispatch:
     inputs:
       image_tag:
@@ -30,6 +31,8 @@ jobs:
     environment: production
     outputs:
       aksClusterName: ${{ steps.bicep.outputs.aksClusterName }}
+      aksKubeletIdentityObjectId: ${{ steps.bicep.outputs.aksKubeletIdentityObjectId }}
+      containerRegistryResourceId: ${{ steps.bicep.outputs.containerRegistryResourceId }}
       containerRegistryLoginServer: ${{ steps.bicep.outputs.containerRegistryLoginServer }}
 
     steps:
@@ -79,5 +82,7 @@ jobs:
     with:
       image_tag: ${{ inputs.image_tag }}
       aks_cluster_name: ${{ needs.deploy.outputs.aksClusterName }}
+      aks_kubelet_object_id: ${{ needs.deploy.outputs.aksKubeletIdentityObjectId }}
+      container_registry_resource_id: ${{ needs.deploy.outputs.containerRegistryResourceId }}
       container_registry_login_server: ${{ needs.deploy.outputs.containerRegistryLoginServer }}
     secrets: inherit

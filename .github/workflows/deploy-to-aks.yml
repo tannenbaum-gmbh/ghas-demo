@@ -11,6 +11,14 @@ on:
         required: false
         type: string
         default: ''
+      aks_kubelet_object_id:
+        required: false
+        type: string
+        default: ''
+      container_registry_resource_id:
+        required: false
+        type: string
+        default: ''
       container_registry_login_server:
         required: false
         type: string
@@ -45,12 +53,44 @@ jobs:
           if [ -z "$aks_cluster_name" ]; then
             aks_cluster_name=$(az aks list --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" --query "[0].name" -o tsv)
           fi
+          aks_kubelet_object_id="${{ inputs.aks_kubelet_object_id }}"
+          if [ -z "$aks_kubelet_object_id" ]; then
+            aks_kubelet_object_id=$(az aks show --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" --name "$aks_cluster_name" --query "identityProfile.kubeletidentity.objectId" -o tsv)
+          fi
+          container_registry_resource_id="${{ inputs.container_registry_resource_id }}"
+          if [ -z "$container_registry_resource_id" ]; then
+            container_registry_resource_id=$(az acr list --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" --query "[0].id" -o tsv)
+          fi
           container_registry_login_server="${{ inputs.container_registry_login_server }}"
           if [ -z "$container_registry_login_server" ]; then
             container_registry_login_server=$(az acr list --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" --query "[0].loginServer" -o tsv)
           fi
           echo "aks_cluster_name=$aks_cluster_name" >> "$GITHUB_OUTPUT"
+          echo "aks_kubelet_object_id=$aks_kubelet_object_id" >> "$GITHUB_OUTPUT"
+          echo "container_registry_resource_id=$container_registry_resource_id" >> "$GITHUB_OUTPUT"
           echo "container_registry_login_server=$container_registry_login_server" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for kubelet AcrPull role assignment
+        env:
+          ACR_RESOURCE_ID: ${{ steps.resolve.outputs.container_registry_resource_id }}
+          KUBELET_OBJECT_ID: ${{ steps.resolve.outputs.aks_kubelet_object_id }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 20); do
+            assignment_count="$(az role assignment list \
+              --scope "$ACR_RESOURCE_ID" \
+              --assignee-object-id "$KUBELET_OBJECT_ID" \
+              --query "[?roleDefinitionName=='AcrPull'] | length(@)" \
+              -o tsv)"
+            if [ "${assignment_count}" != "0" ]; then
+              echo "AcrPull role assignment is visible for kubelet identity."
+              exit 0
+            fi
+            echo "Waiting for AcrPull role assignment propagation for kubelet identity (attempt ${attempt}/20)..."
+            sleep 15
+          done
+          echo "Timed out waiting for AcrPull role assignment propagation for kubelet identity."
+          exit 1
 
       - name: Install kubectl
         uses: azure/setup-kubectl@v4
@@ -71,6 +111,7 @@ jobs:
           IMAGE_TAG: ${{ inputs.image_tag }}
           K8S_NAMESPACE: ghas-demo
         run: |
+          set -euo pipefail
           kubectl apply -f infra/k8s/namespace.yaml
 
           for service in authn-service gallery-service storage-service; do
@@ -80,3 +121,18 @@ jobs:
           kubectl set image -f infra/k8s/frontend.yaml frontend="${ACR_LOGIN_SERVER}/frontend:${IMAGE_TAG}" --local -o yaml \
             | kubectl set env --local -f - AUTHN_BASE_URL="http://authn-service.${K8S_NAMESPACE}.svc.cluster.local:5000" GALLERY_BASE_URL="http://gallery-service.${K8S_NAMESPACE}.svc.cluster.local:8081" -o yaml \
             | kubectl apply -f -
+
+          for deployment in authn-service gallery-service storage-service frontend; do
+            for attempt in $(seq 1 4); do
+              if kubectl rollout status "deployment/${deployment}" --namespace "${K8S_NAMESPACE}" --timeout=90s; then
+                break
+              fi
+              if [ "${attempt}" = "4" ]; then
+                kubectl get pods --namespace "${K8S_NAMESPACE}" -l "app=${deployment}" -o wide || true
+                kubectl describe deployment "${deployment}" --namespace "${K8S_NAMESPACE}" || true
+                exit 1
+              fi
+              echo "Rollout for ${deployment} is not ready yet; waiting before retrying."
+              sleep 30
+            done
+          done

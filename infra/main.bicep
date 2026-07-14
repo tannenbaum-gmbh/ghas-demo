@@ -20,6 +20,9 @@ param imageTag string = 'latest'
 @description('Principal ID for the GitHub OIDC identity used by workflow deployments.')
 param githubOidcPrincipalId string = ''
 
+@description('Optional object ID override for the AKS kubelet identity that should receive AcrPull on the registry.')
+param aksKubeletObjectId string = ''
+
 @description('Minimum number of replicas to configure for each container app.')
 @minValue(1)
 param containerAppMinReplicas int = 1
@@ -319,6 +322,22 @@ module aksCluster 'br/public:avm/res/container-service/managed-cluster:0.13.1' =
   }
 }
 
+resource containerRegistryResource 'Microsoft.ContainerRegistry/registries@2023-07-01' existing = {
+  name: last(split(containerRegistry.outputs.resourceId, '/'))
+}
+
+var resolvedAksKubeletObjectId = empty(aksKubeletObjectId) ? (aksCluster.outputs.kubeletIdentityObjectId ?? '') : aksKubeletObjectId
+
+resource aksKubeletAcrPullRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(resolvedAksKubeletObjectId)) {
+  name: guid(containerRegistry.outputs.resourceId, acrPullRoleDefinitionId, resolvedAksKubeletObjectId)
+  scope: containerRegistryResource
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', acrPullRoleDefinitionId)
+    principalId: resolvedAksKubeletObjectId
+    principalType: 'ServicePrincipal'
+  }
+}
+
 // ── App Service Plan (B1, Linux) ─────────────────────────────────────────────
 
 var webAppSuffix = take(uniqueString(resourceGroup().id), 8)
@@ -507,3 +526,6 @@ output aksClusterName string = aksCluster.outputs.name
 
 @description('Resource ID of the AKS cluster.')
 output aksClusterResourceId string = aksCluster.outputs.resourceId
+
+@description('Object ID of the AKS kubelet identity.')
+output aksKubeletIdentityObjectId string = resolvedAksKubeletObjectId
