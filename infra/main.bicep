@@ -292,6 +292,16 @@ module aksCluster 'br/public:avm/res/container-service/managed-cluster:0.4.1' = 
         type: 'VirtualMachineScaleSets'
       }
     ]
+    agentPools: [
+      {
+        name: 'workerpool'
+        count: 1
+        vmSize: 'Standard_B2s'
+        mode: 'User'
+        osType: 'Linux'
+        type: 'VirtualMachineScaleSets'
+      }
+    ]
     managedIdentities: {
       userAssignedResourcesIds: [managedIdentity.outputs.resourceId]
     }

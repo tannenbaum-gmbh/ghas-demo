@@ -15,6 +15,8 @@ spec:
       labels:
         app: frontend
     spec:
+      nodeSelector:
+        kubernetes.azure.com/agentpool: workerpool
       containers:
         - name: frontend
           image: ${ACR_LOGIN_SERVER}/frontend:${IMAGE_TAG}
