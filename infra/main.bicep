@@ -296,6 +296,9 @@ module aksCluster 'br/public:avm/res/container-service/managed-cluster:0.4.1' = 
       {
         name: 'workerpool'
         count: 1
+        minCount: 1
+        maxCount: 3
+        enableAutoScaling: true
         vmSize: 'Standard_B2s'
         mode: 'User'
         osType: 'Linux'
