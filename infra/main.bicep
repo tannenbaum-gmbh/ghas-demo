@@ -308,9 +308,6 @@ resource kubeletIdentityOperatorRoleAssignment 'Microsoft.Authorization/roleAssi
     )
     principalType: 'ServicePrincipal'
   }
-  dependsOn: [
-    kubeletIdentity
-  ]
 }
 
 module aksCluster 'br/public:avm/res/container-service/managed-cluster:0.13.1' = {
