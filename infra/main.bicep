@@ -70,6 +70,17 @@ module managedIdentity 'br/public:avm/res/managed-identity/user-assigned-identit
   }
 }
 
+// ── Kubelet User-Assigned Managed Identity ────────────────────────────────────
+
+module kubeletIdentity 'br/public:avm/res/managed-identity/user-assigned-identity:0.4.1' = {
+  name: 'kubeletIdentity'
+  params: {
+    name: 'id-kubelet-${environmentName}'
+    location: location
+    tags: tags
+  }
+}
+
 // ── Azure Container Registry ──────────────────────────────────────────────────
 
 // Built-in role definition ID for AcrPull
@@ -87,6 +98,11 @@ module containerRegistry 'br/public:avm/res/container-registry/registry:0.9.1' =
     roleAssignments: [
       {
         principalId: managedIdentity.outputs.principalId
+        roleDefinitionIdOrName: acrPullRoleDefinitionId
+        principalType: 'ServicePrincipal'
+      }
+      {
+        principalId: kubeletIdentity.outputs.principalId
         roleDefinitionIdOrName: acrPullRoleDefinitionId
         principalType: 'ServicePrincipal'
       }
@@ -308,6 +324,13 @@ module aksCluster 'br/public:avm/res/container-service/managed-cluster:0.13.1' =
     managedIdentities: {
       userAssignedResourceIds: [managedIdentity.outputs.resourceId]
     }
+    identityProfile: {
+      kubeletidentity: {
+        resourceId: kubeletIdentity.outputs.resourceId
+        clientId: kubeletIdentity.outputs.clientId
+        objectId: kubeletIdentity.outputs.principalId
+      }
+    }
     roleAssignments: [
       for principalId in aksClusterUserRolePrincipalIds: {
         principalId: principalId
@@ -317,6 +340,7 @@ module aksCluster 'br/public:avm/res/container-service/managed-cluster:0.13.1' =
     ]
     diagnosticSettings: logAnalyticsDiagnosticSettings
   }
+  dependsOn: [containerRegistry]
 }
 
 // ── App Service Plan (B1, Linux) ─────────────────────────────────────────────
