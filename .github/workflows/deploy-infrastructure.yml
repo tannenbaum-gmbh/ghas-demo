@@ -28,6 +28,9 @@ jobs:
     name: Deploy Bicep infrastructure
     runs-on: ubuntu-latest
     environment: production
+    outputs:
+      aksClusterName: ${{ steps.bicep.outputs.aksClusterName }}
+      containerRegistryLoginServer: ${{ steps.bicep.outputs.containerRegistryLoginServer }}
 
     steps:
       - name: Checkout repository
@@ -69,30 +72,12 @@ jobs:
             githubOidcPrincipalId=${{ steps.oidc-principal.outputs.principal-id }}
           failOnStdErr: true
 
-      - name: Install kubectl
-        uses: azure/setup-kubectl@v4
-
-      - name: Install kubelogin
-        run: az aks install-cli
-
-      - name: Get AKS credentials
-        run: |
-          az aks get-credentials \
-            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
-            --name "${{ steps.bicep.outputs.aksClusterName }}" \
-            --overwrite-existing
-      - name: Deploy to AKS
-        env:
-          ACR_LOGIN_SERVER: ${{ steps.bicep.outputs.containerRegistryLoginServer }}
-          IMAGE_TAG: ${{ inputs.image_tag || 'latest' }}
-          K8S_NAMESPACE: ghas-demo
-        run: |
-          kubectl apply -f infra/k8s/namespace.yaml
-
-          for service in authn-service gallery-service storage-service; do
-            kubectl set image -f "infra/k8s/${service}.yaml" "${service}=${ACR_LOGIN_SERVER}/${service}:${IMAGE_TAG}" --local -o yaml | kubectl apply -f -
-          done
-
-          kubectl set image -f infra/k8s/frontend.yaml frontend="${ACR_LOGIN_SERVER}/frontend:${IMAGE_TAG}" --local -o yaml \
-            | kubectl set env --local -f - AUTHN_BASE_URL="http://authn-service.${K8S_NAMESPACE}.svc.cluster.local:5000" GALLERY_BASE_URL="http://gallery-service.${K8S_NAMESPACE}.svc.cluster.local:8081" -o yaml \
-            | kubectl apply -f -
+  deploy-to-aks:
+    name: Deploy to AKS
+    needs: deploy
+    uses: ./.github/workflows/deploy-to-aks.yml
+    with:
+      image_tag: ${{ inputs.image_tag }}
+      aks_cluster_name: ${{ needs.deploy.outputs.aksClusterName }}
+      container_registry_login_server: ${{ needs.deploy.outputs.containerRegistryLoginServer }}
+    secrets: inherit
