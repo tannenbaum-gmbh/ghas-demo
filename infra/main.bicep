@@ -360,7 +360,6 @@ module aksCluster 'br/public:avm/res/container-service/managed-cluster:0.13.1' =
   }
   dependsOn: [
     containerRegistry
-    kubeletManagedIdentityOperatorRoleAssignment
   ]
 }
 
