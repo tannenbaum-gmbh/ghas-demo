@@ -276,7 +276,7 @@ module frontendApp 'br/public:avm/res/app/container-app:0.22.1' = {
 var aksClusterUserRoleDefinitionId = 'b1ff04bb-8a4e-4dc4-8eb5-8693973ce19b'
 var aksClusterUserRolePrincipalIds = empty(githubOidcPrincipalId) ? [] : [githubOidcPrincipalId]
 
-module aksCluster 'br/public:avm/res/container-service/managed-cluster:0.4.1' = {
+module aksCluster 'br/public:avm/res/container-service/managed-cluster:0.13.1' = {
   name: 'aksCluster'
   params: {
     name: 'aks-${environmentName}'
@@ -306,7 +306,7 @@ module aksCluster 'br/public:avm/res/container-service/managed-cluster:0.4.1' = 
       }
     ]
     managedIdentities: {
-      userAssignedResourcesIds: [managedIdentity.outputs.resourceId]
+      userAssignedResourceIds: [managedIdentity.outputs.resourceId]
     }
     roleAssignments: [
       for principalId in aksClusterUserRolePrincipalIds: {
