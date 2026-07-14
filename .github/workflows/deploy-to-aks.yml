@@ -68,7 +68,7 @@ jobs:
       - name: Deploy to AKS
         env:
           ACR_LOGIN_SERVER: ${{ steps.resolve.outputs.container_registry_login_server }}
-          IMAGE_TAG: ${{ inputs.image_tag || 'latest' }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
           K8S_NAMESPACE: ghas-demo
         run: |
           kubectl apply -f infra/k8s/namespace.yaml

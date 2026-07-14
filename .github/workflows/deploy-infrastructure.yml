@@ -77,7 +77,7 @@ jobs:
     needs: deploy
     uses: ./.github/workflows/deploy-to-aks.yml
     with:
-      image_tag: ${{ inputs.image_tag || 'latest' }}
+      image_tag: ${{ inputs.image_tag }}
       aks_cluster_name: ${{ needs.deploy.outputs.aksClusterName }}
       container_registry_login_server: ${{ needs.deploy.outputs.containerRegistryLoginServer }}
     secrets: inherit
