@@ -295,11 +295,11 @@ var aksClusterUserRolePrincipalIds = empty(githubOidcPrincipalId) ? [] : [github
 
 resource kubeletIdentityOperatorRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(
-    kubeletIdentity.id,
+    kubeletIdentity.outputs.resourceId,
     'id-${environmentName}',
     managedIdentityOperatorRoleDefinitionId
   )
-  scope: kubeletIdentity
+  scope: kubeletIdentity.outputs.resourceId
   properties: {
     principalId: managedIdentity.outputs.principalId
     roleDefinitionId: subscriptionResourceId(
