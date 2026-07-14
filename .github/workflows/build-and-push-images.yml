@@ -95,7 +95,7 @@ jobs:
     needs:
       - metadata
       - build-and-push
-    uses: ./.github/workflows/deploy-infrastructure.yml
+    uses: ./.github/workflows/deploy-to-aks.yml
     with:
       image_tag: ${{ needs.metadata.outputs.image_tag }}
     secrets: inherit

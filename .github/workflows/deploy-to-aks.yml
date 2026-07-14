@@ -1,0 +1,82 @@
+name: Deploy to AKS
+
+on:
+  workflow_call:
+    inputs:
+      image_tag:
+        required: false
+        type: string
+        default: 'latest'
+      aks_cluster_name:
+        required: false
+        type: string
+        default: ''
+      container_registry_login_server:
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-to-aks:
+    name: Deploy to AKS
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Resolve AKS cluster and registry
+        id: resolve
+        run: |
+          set -euo pipefail
+          aks_cluster_name="${{ inputs.aks_cluster_name }}"
+          if [ -z "$aks_cluster_name" ]; then
+            aks_cluster_name=$(az aks list --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" --query "[0].name" -o tsv)
+          fi
+          container_registry_login_server="${{ inputs.container_registry_login_server }}"
+          if [ -z "$container_registry_login_server" ]; then
+            container_registry_login_server=$(az acr list --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" --query "[0].loginServer" -o tsv)
+          fi
+          echo "aks_cluster_name=$aks_cluster_name" >> "$GITHUB_OUTPUT"
+          echo "container_registry_login_server=$container_registry_login_server" >> "$GITHUB_OUTPUT"
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Install kubelogin
+        run: az aks install-cli
+
+      - name: Get AKS credentials
+        run: |
+          az aks get-credentials \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --name "${{ steps.resolve.outputs.aks_cluster_name }}" \
+            --overwrite-existing
+
+      - name: Deploy to AKS
+        env:
+          ACR_LOGIN_SERVER: ${{ steps.resolve.outputs.container_registry_login_server }}
+          IMAGE_TAG: ${{ inputs.image_tag || 'latest' }}
+          K8S_NAMESPACE: ghas-demo
+        run: |
+          kubectl apply -f infra/k8s/namespace.yaml
+
+          for service in authn-service gallery-service storage-service; do
+            kubectl set image -f "infra/k8s/${service}.yaml" "${service}=${ACR_LOGIN_SERVER}/${service}:${IMAGE_TAG}" --local -o yaml | kubectl apply -f -
+          done
+
+          kubectl set image -f infra/k8s/frontend.yaml frontend="${ACR_LOGIN_SERVER}/frontend:${IMAGE_TAG}" --local -o yaml \
+            | kubectl set env --local -f - AUTHN_BASE_URL="http://authn-service.${K8S_NAMESPACE}.svc.cluster.local:5000" GALLERY_BASE_URL="http://gallery-service.${K8S_NAMESPACE}.svc.cluster.local:8081" -o yaml \
+            | kubectl apply -f -
