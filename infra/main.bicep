@@ -290,7 +290,28 @@ module frontendApp 'br/public:avm/res/app/container-app:0.22.1' = {
 
 // Built-in role definition ID for Azure Kubernetes Service Cluster User Role
 var aksClusterUserRoleDefinitionId = 'b1ff04bb-8a4e-4dc4-8eb5-8693973ce19b'
+var managedIdentityOperatorRoleDefinitionId = 'f1a07417-d97a-45cb-824c-7a7467783830'
 var aksClusterUserRolePrincipalIds = empty(githubOidcPrincipalId) ? [] : [githubOidcPrincipalId]
+
+resource kubeletIdentityOperatorRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(
+    kubeletIdentity.id,
+    'id-${environmentName}',
+    managedIdentityOperatorRoleDefinitionId
+  )
+  scope: kubeletIdentity
+  properties: {
+    principalId: managedIdentity.outputs.principalId
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      managedIdentityOperatorRoleDefinitionId
+    )
+    principalType: 'ServicePrincipal'
+  }
+  dependsOn: [
+    kubeletIdentity
+  ]
+}
 
 module aksCluster 'br/public:avm/res/container-service/managed-cluster:0.13.1' = {
   name: 'aksCluster'
@@ -340,7 +361,10 @@ module aksCluster 'br/public:avm/res/container-service/managed-cluster:0.13.1' =
     ]
     diagnosticSettings: logAnalyticsDiagnosticSettings
   }
-  dependsOn: [containerRegistry]
+  dependsOn: [
+    containerRegistry
+    kubeletManagedIdentityOperatorRoleAssignment
+  ]
 }
 
 // ── App Service Plan (B1, Linux) ─────────────────────────────────────────────
