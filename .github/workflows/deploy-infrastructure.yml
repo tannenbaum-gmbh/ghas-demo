@@ -1,12 +1,6 @@
 name: Deploy Infrastructure
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'infra/**'
-      - '.github/workflows/deploy-infrastructure.yml'
   workflow_dispatch:
     inputs:
       image_tag:
