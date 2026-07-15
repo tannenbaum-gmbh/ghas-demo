@@ -74,9 +74,9 @@ jobs:
           kubectl apply -f infra/k8s/namespace.yaml
 
           for service in authn-service gallery-service storage-service; do
-            kubectl set image -f "infra/k8s/${service}.yaml" "${service}=${ACR_LOGIN_SERVER}/${service}:${IMAGE_TAG}" --local -o yaml | kubectl apply -f -
+            envsubst < "infra/k8s/${service}.yaml" | kubectl apply -f -
           done
 
-          kubectl set image -f infra/k8s/frontend.yaml frontend="${ACR_LOGIN_SERVER}/frontend:${IMAGE_TAG}" --local -o yaml \
-            | kubectl set env --local -f - AUTHN_BASE_URL="http://authn-service.${K8S_NAMESPACE}.svc.cluster.local:5000" GALLERY_BASE_URL="http://gallery-service.${K8S_NAMESPACE}.svc.cluster.local:8081" -o yaml \
-            | kubectl apply -f -
+          AUTHN_BASE_URL="http://authn-service.${K8S_NAMESPACE}.svc.cluster.local:5000" \
+          GALLERY_BASE_URL="http://gallery-service.${K8S_NAMESPACE}.svc.cluster.local:8081" \
+          envsubst < infra/k8s/frontend.yaml | kubectl apply -f -
